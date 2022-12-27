@@ -10,15 +10,18 @@ import SwiftUI
 class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
   @Binding var isCoordinatorShown: Bool
   @Binding var imageInCoordinator: Image?
-  init(isShown: Binding<Bool>, image: Binding<Image?>) {
+    @Binding var showSecondView: Bool
+    init(isShown: Binding<Bool>, image: Binding<Image?>, secondView: Binding<Bool>) {
     _isCoordinatorShown = isShown
     _imageInCoordinator = image
+      _showSecondView = secondView
   }
   func imagePickerController(_ picker: UIImagePickerController,
                 didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
      guard let unwrapImage = info[UIImagePickerController.InfoKey.originalImage] as? UIImage else { return }
      imageInCoordinator = Image(uiImage: unwrapImage)
      isCoordinatorShown = false
+      showSecondView = true
   }
   func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
      isCoordinatorShown = false
@@ -30,9 +33,10 @@ struct CaptureImageView {
     /// MARK: - Properties
     @Binding var isShown: Bool
     @Binding var image: Image?
+    @Binding var secondView: Bool
     
     func makeCoordinator() -> Coordinator {
-      return Coordinator(isShown: $isShown, image: $image)
+        return Coordinator(isShown: $isShown, image: $image, secondView: $secondView)
     }
 }
 
@@ -40,7 +44,7 @@ extension CaptureImageView: UIViewControllerRepresentable {
     func makeUIViewController(context: UIViewControllerRepresentableContext<CaptureImageView>) -> UIImagePickerController {
         let picker = UIImagePickerController()
         picker.delegate = context.coordinator
-        picker.sourceType = .camera
+        picker.sourceType = .photoLibrary
         return picker
     }
     
@@ -50,27 +54,32 @@ extension CaptureImageView: UIViewControllerRepresentable {
     }
 }
 
+struct SecondView: View {
+    var body: some View{
+        Text("hi")
+    }
+}
+
 struct ContentView: View {
     
     @State var image: Image? = nil
     @State var showCaptureImageView = false
+    @State var showSecondView = false
     var body: some View {
-        ZStack {
-          VStack {
+        NavigationView{
+            VStack{
             Button(action: {
               self.showCaptureImageView.toggle()
             }) {
               Text("Choose photos")
             }
-            image?.resizable()
-              .frame(width: 250, height: 200)
-              .clipShape(Circle())
-              .overlay(Circle().stroke(Color.white, lineWidth: 4))
-              .shadow(radius: 10)
-          }
+
+
           if (showCaptureImageView) {
-            CaptureImageView(isShown: $showCaptureImageView, image: $image)
+              CaptureImageView(isShown: $showCaptureImageView, image: $image, secondView: $showSecondView)
           }
+            NavigationLink(destination: Text("GOT IT BABY LEGOOOOO"), isActive: $showSecondView){EmptyView()}
+        }
         }
       }
 }
